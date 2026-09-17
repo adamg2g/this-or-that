@@ -1,0 +1,578 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>This or That</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Shrikhand&family=Karla:ital,wght@0,400;0,700;0,800;1,400&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --ink: #191308;
+    --paper: #FFF4E3;
+    --coral: #FF5A3C;
+    --teal: #00A19A;
+    --yellow: #FFC700;
+    --pink: #FF7AC3;
+    --green: #7ED957;
+    --sky: #5CC8FF;
+    --shadow: 6px 6px 0 var(--ink);
+    --shadow-sm: 3px 3px 0 var(--ink);
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body { height: 100%; }
+  body {
+    font-family: 'Karla', sans-serif;
+    background-color: var(--paper);
+    background-image:
+      radial-gradient(var(--ink) 1.1px, transparent 1.1px),
+      radial-gradient(var(--ink) 1.1px, transparent 1.1px);
+    background-size: 26px 26px;
+    background-position: 0 0, 13px 13px;
+    color: var(--ink);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    min-height: 100%;
+    overflow-x: hidden;
+  }
+  /* soften the dot grid so content pops */
+  body::before {
+    content: '';
+    position: fixed; inset: 0;
+    background: var(--paper);
+    opacity: 0.88;
+    pointer-events: none;
+    z-index: 0;
+  }
+  main { position: relative; z-index: 1; width: 100%; max-width: 860px; padding: 24px 16px 48px; }
+
+  .screen { display: none; }
+  .screen.active { display: block; animation: screenIn .35s cubic-bezier(.2,1.4,.4,1) both; }
+  @keyframes screenIn { from { opacity: 0; transform: translateY(14px) } to { opacity: 1; transform: none } }
+
+  /* ── title ─────────────────────────────── */
+  .brand { text-align: center; margin: 18px 0 6px; user-select: none; }
+  .brand .word {
+    font-family: 'Shrikhand', cursive;
+    font-size: clamp(2.6rem, 9vw, 4.6rem);
+    line-height: .95;
+    display: inline-block;
+    letter-spacing: .01em;
+    -webkit-text-stroke: 2px var(--ink);
+    text-shadow: 4px 4px 0 var(--ink);
+  }
+  .brand .this { color: var(--coral); transform: rotate(-3deg); }
+  .brand .that { color: var(--teal); transform: rotate(2deg); }
+  .brand .or {
+    font-family: 'Shrikhand', cursive;
+    display: inline-block;
+    background: var(--yellow);
+    border: 3px solid var(--ink);
+    border-radius: 50%;
+    width: 2.6em; height: 2.6em;
+    line-height: 2.5em;
+    font-size: clamp(.9rem, 3vw, 1.4rem);
+    box-shadow: var(--shadow-sm);
+    transform: rotate(-8deg) translateY(-.4em);
+    margin: 0 .2em;
+  }
+  .tagline { text-align: center; font-weight: 700; opacity: .75; margin-bottom: 28px; }
+
+  /* ── lobby ─────────────────────────────── */
+  .join-row { display: flex; gap: 10px; justify-content: center; margin-bottom: 30px; flex-wrap: wrap; }
+  input[type=text] {
+    font-family: 'Karla', sans-serif;
+    font-size: 1.15rem; font-weight: 700;
+    padding: 13px 16px;
+    border: 3px solid var(--ink);
+    border-radius: 12px;
+    background: #fff;
+    box-shadow: var(--shadow-sm);
+    outline: none;
+    width: min(280px, 60vw);
+  }
+  input[type=text]:focus { box-shadow: var(--shadow); transform: translate(-2px,-2px); }
+  .btn {
+    font-family: 'Shrikhand', cursive;
+    font-size: 1.1rem;
+    padding: 12px 26px;
+    border: 3px solid var(--ink);
+    border-radius: 12px;
+    background: var(--coral);
+    color: var(--paper);
+    cursor: pointer;
+    box-shadow: var(--shadow-sm);
+    transition: transform .1s, box-shadow .1s;
+    -webkit-text-stroke: 1px var(--ink);
+  }
+  .btn:hover:not(:disabled) { transform: translate(-2px,-2px); box-shadow: var(--shadow); }
+  .btn:active:not(:disabled) { transform: translate(2px,2px); box-shadow: 1px 1px 0 var(--ink); }
+  .btn:disabled { opacity: .45; cursor: not-allowed; }
+  .btn.teal { background: var(--teal); }
+  .join-error { text-align: center; color: var(--coral); font-weight: 800; min-height: 1.4em; margin: -18px 0 14px; }
+
+  .slots { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 14px; }
+  .slot {
+    border: 3px dashed var(--ink);
+    border-radius: 16px;
+    padding: 18px 10px;
+    text-align: center;
+    min-height: 108px;
+    display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px;
+    opacity: .45;
+  }
+  .slot.filled {
+    border-style: solid;
+    background: #fff;
+    opacity: 1;
+    box-shadow: var(--shadow-sm);
+    animation: popIn .35s cubic-bezier(.2,1.6,.4,1) both;
+  }
+  .slot .who { font-weight: 800; font-size: 1.05rem; word-break: break-word; }
+  .slot .wait { font-weight: 700; font-size: .9rem; }
+  .lobby-status { text-align: center; font-weight: 800; font-size: 1.15rem; margin-top: 26px; }
+  .lobby-status .dots::after { content: ''; animation: dots 1.5s steps(4) infinite; }
+  @keyframes dots { 0% {content:''} 25% {content:'.'} 50% {content:'..'} 75% {content:'...'} }
+
+  /* ── tokens ────────────────────────────── */
+  .token {
+    width: 46px; height: 46px;
+    border-radius: 50%;
+    border: 3px solid var(--ink);
+    display: inline-flex; align-items: center; justify-content: center;
+    font-family: 'Shrikhand', cursive;
+    font-size: 1rem;
+    box-shadow: var(--shadow-sm);
+    flex-shrink: 0;
+  }
+  @keyframes popIn { from { transform: scale(0) rotate(-20deg); opacity: 0 } to { transform: scale(1) rotate(0); opacity: 1 } }
+
+  /* ── question / reveal ─────────────────── */
+  .round-head { text-align: center; margin-bottom: 6px; }
+  .round-head .round-label {
+    font-family: 'Shrikhand', cursive;
+    font-size: clamp(1.6rem, 6vw, 2.4rem);
+    display: inline-block;
+    background: var(--yellow);
+    border: 3px solid var(--ink);
+    border-radius: 14px;
+    padding: 4px 22px;
+    box-shadow: var(--shadow-sm);
+    transform: rotate(-2deg);
+  }
+  .progress { text-align: center; margin: 12px 0 24px; display: flex; gap: 8px; justify-content: center; }
+  .pip { width: 14px; height: 14px; border-radius: 50%; border: 2.5px solid var(--ink); background: transparent; }
+  .pip.done { background: var(--ink); }
+  .pip.now { background: var(--yellow); }
+
+  .cards { display: grid; grid-template-columns: 1fr; gap: 22px; position: relative; }
+  @media (min-width: 640px) { .cards { grid-template-columns: 1fr 1fr; gap: 30px; } }
+  .vs {
+    position: absolute; left: 50%; top: 50%;
+    transform: translate(-50%,-50%) rotate(-8deg);
+    font-family: 'Shrikhand', cursive;
+    background: var(--ink); color: var(--paper);
+    border-radius: 50%;
+    width: 58px; height: 58px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.2rem;
+    z-index: 2;
+    border: 3px solid var(--paper);
+    box-shadow: 0 0 0 3px var(--ink);
+  }
+  .card {
+    border: 3px solid var(--ink);
+    border-radius: 20px;
+    padding: 30px 20px;
+    text-align: center;
+    color: var(--paper);
+    box-shadow: var(--shadow);
+    min-height: 150px;
+    display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 14px;
+  }
+  .card.a { background: var(--coral); transform: rotate(-.6deg); }
+  .card.b { background: var(--teal); transform: rotate(.6deg); }
+  .card .opt-text {
+    font-family: 'Shrikhand', cursive;
+    font-size: clamp(1.25rem, 4.5vw, 1.7rem);
+    line-height: 1.2;
+    text-shadow: 2.5px 2.5px 0 var(--ink);
+  }
+  button.card { cursor: pointer; width: 100%; transition: transform .12s, box-shadow .12s; }
+  button.card:hover:not(:disabled) { transform: translate(-3px,-3px) rotate(0); box-shadow: 9px 9px 0 var(--ink); }
+  button.card:active:not(:disabled) { transform: translate(2px,2px); box-shadow: 2px 2px 0 var(--ink); }
+  button.card:disabled { cursor: default; }
+  button.card.picked { outline: 5px solid var(--yellow); outline-offset: 3px; }
+  button.card.dimmed { opacity: .55; }
+
+  .status-line { text-align: center; font-weight: 800; font-size: 1.1rem; margin-top: 26px; min-height: 1.5em; }
+
+  .token-tray {
+    display: flex; gap: 10px; justify-content: center; flex-wrap: wrap;
+    min-height: 54px; padding-top: 4px;
+  }
+  .token-tray .token { animation: dropIn .5s cubic-bezier(.2,1.5,.4,1) both; }
+  @keyframes dropIn { from { transform: translateY(-30px) scale(.4); opacity: 0 } to { transform: none; opacity: 1 } }
+  .pick-count { font-weight: 800; font-size: .95rem; opacity: .9; }
+
+  .next-area { text-align: center; margin-top: 30px; min-height: 56px; }
+
+  /* ── final ─────────────────────────────── */
+  .final-card {
+    background: #fff; border: 3px solid var(--ink); border-radius: 20px;
+    box-shadow: var(--shadow); padding: 36px 24px; text-align: center; margin-top: 10px;
+  }
+  .final-card h2 { font-family: 'Shrikhand', cursive; font-size: clamp(1.8rem, 7vw, 2.8rem); margin-bottom: 12px; }
+  .final-card p { font-weight: 700; font-size: 1.15rem; margin-bottom: 24px; }
+
+  .banner {
+    display: none; position: fixed; top: 0; left: 0; right: 0; z-index: 5;
+    background: var(--ink); color: var(--paper);
+    text-align: center; font-weight: 800; padding: 8px; font-size: .95rem;
+  }
+  .banner.show { display: block; }
+</style>
+</head>
+<body>
+<div class="banner" id="banner"></div>
+<main>
+  <header class="brand">
+    <span class="word this">This</span><span class="or">or</span><span class="word that">That</span>
+  </header>
+  <p class="tagline">4 players · 4 rounds · no wrong answers</p>
+
+  <!-- ── LOBBY ── -->
+  <section class="screen active" id="screen-lobby">
+    <div class="join-row">
+      <input type="text" id="name-input" maxlength="20" placeholder="Your name" autocomplete="off">
+      <button class="btn" id="join-btn" disabled>Join</button>
+    </div>
+    <div class="join-error" id="join-error"></div>
+    <div class="slots" id="slots"></div>
+    <p class="lobby-status" id="lobby-status">Connecting<span class="dots"></span></p>
+  </section>
+
+  <!-- ── QUESTION ── -->
+  <section class="screen" id="screen-question">
+    <div class="round-head"><span class="round-label" id="q-round"></span></div>
+    <div class="progress" id="q-progress"></div>
+    <div class="cards">
+      <button class="card a" id="opt-a"><span class="opt-text" id="opt-a-text"></span></button>
+      <div class="vs">vs</div>
+      <button class="card b" id="opt-b"><span class="opt-text" id="opt-b-text"></span></button>
+    </div>
+    <p class="status-line" id="q-status"></p>
+  </section>
+
+  <!-- ── REVEAL ── -->
+  <section class="screen" id="screen-reveal">
+    <div class="round-head"><span class="round-label" id="r-round"></span></div>
+    <div class="progress" id="r-progress"></div>
+    <div class="cards">
+      <div class="card a">
+        <span class="opt-text" id="r-a-text"></span>
+        <div class="token-tray" id="r-a-tray"></div>
+        <span class="pick-count" id="r-a-count"></span>
+      </div>
+      <div class="vs">vs</div>
+      <div class="card b">
+        <span class="opt-text" id="r-b-text"></span>
+        <div class="token-tray" id="r-b-tray"></div>
+        <span class="pick-count" id="r-b-count"></span>
+      </div>
+    </div>
+    <div class="next-area" id="next-area"></div>
+  </section>
+
+  <!-- ── FINAL ── -->
+  <section class="screen" id="screen-final">
+    <div class="final-card">
+      <h2>That's the game!</h2>
+      <p id="final-stat"></p>
+      <button class="btn teal" id="reset-btn">Play again</button>
+    </div>
+  </section>
+</main>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+/* ═══════════════════════════════════════════════════════════════════
+   ✏️  ADAM WRITES THIS (1 of 2): the four questions
+   Each round shows option `a` on the coral card and `b` on the teal
+   card. Keep them short — they render in big display type.
+   ═══════════════════════════════════════════════════════════════════ */
+const QUESTIONS = [
+  { a: 'I cook following recipes', b: 'I completely wing it' },
+  { a: 'Placeholder: early bird', b: 'Placeholder: night owl' },
+  { a: 'Placeholder: beach trip', b: 'Placeholder: city trip' },
+  { a: 'Placeholder: call people', b: 'Placeholder: text people' },
+];
+
+/* ── config ──────────────────────────────────────────────────────── */
+const SUPABASE_URL = 'https://wnkwwuzyasrzdkxpiqrt.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_Z6Y6bGzbIj4sWLpax8rRsg_UnjvDjff'; // publishable key — safe to expose
+const ROOM = 'this-or-that-v1'; // one fixed room: everyone on this URL plays together
+const PLAYER_COUNT = 4;
+const TOKEN_COLORS = ['var(--yellow)', 'var(--pink)', 'var(--green)', 'var(--sky)'];
+
+/* ── state (every client derives the SAME state from the same events) */
+let phase = 'lobby';      // lobby | question | reveal | final
+let round = 0;            // 0-based index into QUESTIONS
+let roster = [];          // everyone present, canonically sorted
+let players = [];         // the 4 who made it in, fixed at game start
+let answers = {};         // round -> { name: 'a' | 'b' }
+let myName = null;
+
+const $ = id => document.getElementById(id);
+const clientId = Math.random().toString(36).slice(2, 10);
+const client = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+const channel = client.channel(ROOM, {
+  config: {
+    broadcast: { self: true },          // sender receives its own events: one code path for all 4 clients
+    presence: { key: clientId },
+  },
+});
+
+channel.on('presence', { event: 'sync' }, onPresenceSync);
+channel.on('broadcast', { event: 'answer' }, ({ payload }) => onAnswer(payload));
+channel.on('broadcast', { event: 'next' }, ({ payload }) => goToRound(payload.round));
+channel.on('broadcast', { event: 'reset' }, () => location.reload());
+channel.subscribe(status => {
+  if (status === 'SUBSCRIBED') {
+    $('join-btn').disabled = false;
+    $('lobby-status').innerHTML = 'Waiting for players<span class="dots"></span>';
+  } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
+    $('lobby-status').textContent = 'Connection trouble — refresh to retry.';
+  }
+});
+
+/* ── lobby ───────────────────────────────────────────────────────── */
+$('join-btn').addEventListener('click', join);
+$('name-input').addEventListener('keydown', e => { if (e.key === 'Enter') join(); });
+
+async function join() {
+  const name = $('name-input').value.trim();
+  if (!name) return showJoinError('Type a name first!');
+  if (roster.some(p => p.name.toLowerCase() === name.toLowerCase()))
+    return showJoinError('That name is taken — pick another.');
+  if (roster.length >= PLAYER_COUNT) return showJoinError('Game is full!');
+  showJoinError('');
+  myName = name;
+  $('join-btn').disabled = true;
+  $('name-input').disabled = true;
+  await channel.track({ name, joinedAt: Date.now() });
+}
+
+function showJoinError(msg) { $('join-error').textContent = msg; }
+
+function onPresenceSync() {
+  const state = channel.presenceState();
+  roster = Object.values(state)
+    .map(metas => metas[0])
+    .filter(m => m && m.name)
+    .sort((x, y) => x.joinedAt - y.joinedAt || x.name.localeCompare(y.name));
+  if (phase === 'lobby') {
+    renderLobby();
+    if (roster.length >= PLAYER_COUNT) startGame();
+  }
+}
+
+function renderLobby() {
+  const slots = $('slots');
+  slots.innerHTML = '';
+  for (let i = 0; i < PLAYER_COUNT; i++) {
+    const p = roster[i];
+    const div = document.createElement('div');
+    div.className = 'slot' + (p ? ' filled' : '');
+    if (p) {
+      div.appendChild(tokenEl(p.name, i));
+      const who = document.createElement('span');
+      who.className = 'who';
+      who.textContent = p.name;
+      div.appendChild(who);
+    } else {
+      div.innerHTML = '<span class="wait">waiting…</span>';
+    }
+    slots.appendChild(div);
+  }
+  if (roster.length > 0 && roster.length < PLAYER_COUNT) {
+    $('lobby-status').innerHTML =
+      `${roster.length} of ${PLAYER_COUNT} joined — waiting for ${PLAYER_COUNT - roster.length} more<span class="dots"></span>`;
+  }
+}
+
+function startGame() {
+  players = roster.slice(0, PLAYER_COUNT); // deterministic on every client: same sort, same slice
+  phase = 'question';
+  round = 0;
+  if (!isPlayer()) {
+    $('banner').textContent = myName ? 'Game is full — you are spectating' : 'Game in progress — spectating';
+    $('banner').classList.add('show');
+  }
+  renderQuestion();
+}
+
+/* ── question ────────────────────────────────────────────────────── */
+$('opt-a').addEventListener('click', () => pick('a'));
+$('opt-b').addEventListener('click', () => pick('b'));
+
+function isPlayer() { return myName && players.some(p => p.name === myName); }
+const roundAnswers = r => answers[r] || {};
+
+function renderQuestion() {
+  const q = QUESTIONS[round];
+  $('q-round').textContent = `Round ${round + 1}`;
+  renderProgress($('q-progress'));
+  $('opt-a-text').textContent = q.a;
+  $('opt-b-text').textContent = q.b;
+  for (const id of ['opt-a', 'opt-b']) {
+    $(id).disabled = !isPlayer();
+    $(id).classList.remove('picked', 'dimmed');
+  }
+  updateQuestionStatus();
+  showScreen('screen-question');
+}
+
+function pick(choice) {
+  if (!isPlayer() || roundAnswers(round)[myName]) return;
+  $('opt-' + choice).classList.add('picked');
+  $('opt-' + (choice === 'a' ? 'b' : 'a')).classList.add('dimmed');
+  $('opt-a').disabled = $('opt-b').disabled = true;
+  channel.send({ type: 'broadcast', event: 'answer', payload: { round, name: myName, choice } });
+}
+
+function onAnswer(p) {
+  if (!answers[p.round]) answers[p.round] = {};
+  answers[p.round][p.name] = p.choice;
+  if (phase !== 'question' || p.round !== round) return;
+  updateQuestionStatus();
+  if (players.every(pl => roundAnswers(round)[pl.name])) showReveal();
+}
+
+function updateQuestionStatus() {
+  const n = players.filter(pl => roundAnswers(round)[pl.name]).length;
+  const mine = roundAnswers(round)[myName];
+  $('q-status').textContent = n === 0
+    ? (isPlayer() ? 'Tap your answer!' : 'Players are choosing…')
+    : `${n} of ${players.length} locked in${mine ? ' — waiting for the others…' : ''}`;
+}
+
+/* ── reveal ──────────────────────────────────────────────────────── */
+function showReveal() {
+  phase = 'reveal';
+  const q = QUESTIONS[round];
+  $('r-round').textContent = `Round ${round + 1}`;
+  renderProgress($('r-progress'));
+  $('r-a-text').textContent = q.a;
+  $('r-b-text').textContent = q.b;
+  $('r-a-tray').innerHTML = $('r-b-tray').innerHTML = '';
+  $('next-area').innerHTML = '';
+  let aCount = 0, bCount = 0;
+  players.forEach((pl, i) => {
+    const choice = roundAnswers(round)[pl.name];
+    const tok = tokenEl(pl.name, i);
+    tok.style.animationDelay = (i * 0.15) + 's';
+    tok.title = pl.name;
+    if (choice === 'a') { $('r-a-tray').appendChild(tok); aCount++; }
+    else { $('r-b-tray').appendChild(tok); bCount++; }
+  });
+  $('r-a-count').textContent = pickLabel(aCount);
+  $('r-b-count').textContent = pickLabel(bCount);
+  showScreen('screen-reveal');
+  advanceFromReveal(round);
+}
+
+const pickLabel = n => n === 0 ? 'nobody!' : n === players.length ? 'everybody!' : `${n} of ${players.length}`;
+
+/* ═══════════════════════════════════════════════════════════════════
+   ✏️  ADAM WRITES THIS (2 of 2): round pacing
+   Called on EVERY client the moment the reveal screen appears for
+   `finishedRound`. Decide how the game moves on. Building blocks:
+
+     goToRound(finishedRound + 1)   advance THIS client (guarded &
+                                    idempotent; past the last round it
+                                    shows the final screen)
+     sendNext(finishedRound + 1)    broadcast so ALL clients advance —
+                                    any client may call it; duplicate
+                                    calls are ignored by the guard
+     showNextButton(label, fn)      put a button on the reveal screen
+
+   Approaches to consider (~1-5 lines each):
+     A) Auto-advance: every client runs the same timer, no broadcast:
+          setTimeout(() => goToRound(finishedRound + 1), 7000)
+     B) Anyone can press:
+          showNextButton('Next round', () => sendNext(finishedRound + 1))
+     C) Host-only: like B, but only if myName === players[0].name
+   ═══════════════════════════════════════════════════════════════════ */
+function advanceFromReveal(finishedRound) {
+  // TODO(Adam): pick a pacing policy
+}
+
+function sendNext(n) {
+  channel.send({ type: 'broadcast', event: 'next', payload: { round: n } });
+}
+
+function showNextButton(label, fn) {
+  const btn = document.createElement('button');
+  btn.className = 'btn';
+  btn.textContent = label;
+  btn.addEventListener('click', fn);
+  $('next-area').appendChild(btn);
+}
+
+function goToRound(n) {
+  if (phase !== 'reveal' || n !== round + 1) return; // ignore stale/duplicate advances
+  if (n >= QUESTIONS.length) return showFinal();
+  round = n;
+  phase = 'question';
+  renderQuestion();
+}
+
+/* ── final ───────────────────────────────────────────────────────── */
+function showFinal() {
+  phase = 'final';
+  const unanimous = QUESTIONS.filter((_, r) => {
+    const vals = players.map(pl => roundAnswers(r)[pl.name]);
+    return vals.every(v => v === vals[0]);
+  }).length;
+  $('final-stat').textContent = unanimous === 0
+    ? 'You four agreed on… absolutely nothing. Iconic.'
+    : `You were unanimous on ${unanimous} of ${QUESTIONS.length} rounds!`;
+  showScreen('screen-final');
+}
+
+$('reset-btn').addEventListener('click', () => {
+  channel.send({ type: 'broadcast', event: 'reset', payload: {} }); // self:true reloads us too
+});
+
+/* ── shared helpers ──────────────────────────────────────────────── */
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  $(id).classList.add('active');
+}
+
+function renderProgress(el) {
+  el.innerHTML = '';
+  for (let i = 0; i < QUESTIONS.length; i++) {
+    const pip = document.createElement('span');
+    pip.className = 'pip' + (i < round ? ' done' : i === round ? ' now' : '');
+    el.appendChild(pip);
+  }
+}
+
+function tokenEl(name, playerIndex) {
+  const t = document.createElement('span');
+  t.className = 'token';
+  t.style.background = TOKEN_COLORS[playerIndex % TOKEN_COLORS.length];
+  t.textContent = initials(name);
+  return t;
+}
+
+function initials(name) {
+  return name.trim().split(/\s+/).map(w => w[0]).slice(0, 2).join('').toUpperCase();
+}
+</script>
+</body>
+</html>
