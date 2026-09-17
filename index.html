@@ -241,7 +241,7 @@
   <header class="brand">
     <span class="word this">This</span><span class="or">or</span><span class="word that">That</span>
   </header>
-  <p class="tagline">4 players · 4 rounds · no wrong answers</p>
+  <p class="tagline">4 players · 5 rounds · no wrong answers</p>
 
   <!-- ── LOBBY ── -->
   <section class="screen active" id="screen-lobby">
@@ -299,15 +299,15 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
 /* ═══════════════════════════════════════════════════════════════════
-   ✏️  ADAM WRITES THIS (1 of 2): the four questions
-   Each round shows option `a` on the coral card and `b` on the teal
-   card. Keep them short — they render in big display type.
+   The questions (supplied by Adam). Each round shows option `a` on
+   the coral card and `b` on the teal card.
    ═══════════════════════════════════════════════════════════════════ */
 const QUESTIONS = [
-  { a: 'I cook following recipes', b: 'I completely wing it' },
-  { a: 'Placeholder: early bird', b: 'Placeholder: night owl' },
-  { a: 'Placeholder: beach trip', b: 'Placeholder: city trip' },
-  { a: 'Placeholder: call people', b: 'Placeholder: text people' },
+  { a: 'My inbox is at zero', b: "I have 4,000 unread and I'm at peace" },
+  { a: 'I eat the best bite first (why waste time?)', b: 'I assemble a mega-bite and save it for last' },
+  { a: 'I am really specific about file names', b: 'final_v3_ACTUAL_final.docx' },
+  { a: 'I use the full range of emoji reactions', b: "I'm more of a 👍 ❤️ 😂 🙌 person" },
+  { a: 'I think A → B → C', b: 'I think A is kind of like C, which reminds me of B, hang on' },
 ];
 
 /* ── config ──────────────────────────────────────────────────────── */
@@ -487,7 +487,7 @@ function showReveal() {
 const pickLabel = n => n === 0 ? 'nobody!' : n === players.length ? 'everybody!' : `${n} of ${players.length}`;
 
 /* ═══════════════════════════════════════════════════════════════════
-   ✏️  ADAM WRITES THIS (2 of 2): round pacing
+   ✏️  ADAM WRITES THIS: round pacing
    Called on EVERY client the moment the reveal screen appears for
    `finishedRound`. Decide how the game moves on. Building blocks:
 
