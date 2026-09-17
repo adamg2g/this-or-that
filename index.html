@@ -296,7 +296,7 @@
   </section>
 </main>
 
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="supabase.js"></script>
 <script>
 /* ═══════════════════════════════════════════════════════════════════
    The questions (supplied by Adam). Each round shows option `a` on
@@ -507,7 +507,10 @@ const pickLabel = n => n === 0 ? 'nobody!' : n === players.length ? 'everybody!'
      C) Host-only: like B, but only if myName === players[0].name
    ═══════════════════════════════════════════════════════════════════ */
 function advanceFromReveal(finishedRound) {
-  // TODO(Adam): pick a pacing policy
+  // Anyone can press it; the broadcast advances every client, and the
+  // goToRound guard makes duplicate presses harmless.
+  const last = finishedRound + 1 >= QUESTIONS.length;
+  showNextButton(last ? 'See the verdict' : 'Next round', () => sendNext(finishedRound + 1));
 }
 
 function sendNext(n) {
